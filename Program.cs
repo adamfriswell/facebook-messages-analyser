@@ -19,13 +19,12 @@ namespace facebook_messages_analyser
             string chatList = string.Join(", ", chatNames);
 
             ChatInfo selectedChat = new ChatInfo();
-            bool nonEmptyChat = true;
-            while(nonEmptyChat){
+            bool chatNotEmptyOrNull = true;
+            while(chatNotEmptyOrNull){
                 string ans ="";
                 bool chatSelected = false;
                 while(!chatSelected){
                     Console.WriteLine($"Please select a chat from: {chatList} (or Enter to exit)");
-
                     ans = Console.ReadLine();
                 
                     if(chatList.Contains(ans) || string.IsNullOrEmpty(ans)){
@@ -37,7 +36,7 @@ namespace facebook_messages_analyser
                     selectedChat = chats.Where(c => c.Name == ans).SingleOrDefault();
 
                     if(selectedChat == null){
-                        nonEmptyChat = false; 
+                        chatNotEmptyOrNull = false; 
                     }
                     if(selectedChat.NumberOfFiles < 1){
                         Console.WriteLine($"{selectedChat.Name} is empty.");
@@ -48,7 +47,7 @@ namespace facebook_messages_analyser
                     Console.WriteLine($"Chat \"{analysis.Title}\" has {analysis.ParticipantCount} members with a total of {analysis.TotalMessages} messages sent!");
                 }
                 
-                nonEmptyChat = false;
+                chatNotEmptyOrNull = false;
             }
         }
     }
