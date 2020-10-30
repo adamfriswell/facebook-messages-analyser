@@ -2,21 +2,31 @@
 using facebook_messages_analyser.Models;
 using System.IO;
 using Newtonsoft.Json;
+using facebook_messages_analyser.Services;
 
 namespace facebook_messages_analyser
 {
     public class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
-            string currentDirectory = Directory.GetCurrentDirectory();
-            string path = System.IO.Path.Combine(currentDirectory, "Data", "message_1.json");
-            var file = File.ReadAllText(path);
+            long totalMessages = 0;
+            int fileNumber = 1;
 
-            Chat Chat = JsonConvert.DeserializeObject<Chat>(file);
+            while(fileNumber<=10){
+                var chat = GetChat($"message_{fileNumber}.json");
+                totalMessages += chat.Messages.Count;
+                fileNumber ++;
+            }
 
-            Console.WriteLine(Chat.Title);
-        
+            Console.WriteLine(totalMessages);
+        }
+
+        public static Chat GetChat(string fileName){
+            var file = FileService.OpenFile(fileName);
+            Chat chat = JsonConvert.DeserializeObject<Chat>(file);
+
+            return chat;
         }
     }
 }
