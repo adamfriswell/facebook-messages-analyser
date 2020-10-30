@@ -2,4 +2,4 @@
 bin/Debug
 obj
 .DS_STORE
-.json
+*.json
