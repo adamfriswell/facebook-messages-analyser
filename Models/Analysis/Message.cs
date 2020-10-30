@@ -21,6 +21,9 @@ namespace facebook_messages_analyser.Models {
         [JsonProperty("reactions")]
         public List<Reactions> Reactions { get; set; }
 
+        [JsonProperty("share")]
+        public Share Shares { get; set; }
+
         [JsonProperty("type")]
         public string Type {get; set;}
     }

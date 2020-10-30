@@ -11,6 +11,8 @@ namespace facebook_messages_analyser.Services{
             string title = StringSanitiser.RemoveUnescapedUnicode(firstFile.Title);
             title = title.Trim();
 
+            totalMessages += firstFile.Messages.Count;
+
             var participants = firstFile.Participants;
             var participantsNames = string.Join(", ",participants);
             var participantCount = participants.Count;
