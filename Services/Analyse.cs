@@ -1,3 +1,4 @@
+using System;
 using facebook_messages_analyser.Models;
 
 namespace facebook_messages_analyser.Services{
@@ -35,6 +36,11 @@ namespace facebook_messages_analyser.Services{
             analysis.TotalMessages = totalMessages;
 
             return analysis;
+        }
+
+        public static void GetAnalysisResult(string chatName, int numberOfFiles){
+            ChatAnalysis analysis = AnalyseChat(chatName, numberOfFiles);
+            Console.WriteLine($"Chat \"{analysis.Title}\" has {analysis.ParticipantCount} members with a total of {analysis.TotalMessages} messages sent!");
         }
     }
 }

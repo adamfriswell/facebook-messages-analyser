@@ -29,8 +29,7 @@ namespace facebook_messages_analyser
                         Console.WriteLine($"{selectedChat.Name} is empty.");
                     }
                     else{
-                        ChatAnalysis analysis = Analyse.AnalyseChat(selectedChat.Name, selectedChat.NumberOfFiles);
-                        Console.WriteLine($"Chat \"{analysis.Title}\" has {analysis.ParticipantCount} members with a total of {analysis.TotalMessages} messages sent!");
+                        Analyse.GetAnalysisResult(selectedChat.Name, selectedChat.NumberOfFiles);
                     }
 
                     Console.WriteLine($"---------------------------------------------------------------------------------");
