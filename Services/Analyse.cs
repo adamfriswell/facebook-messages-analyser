@@ -30,12 +30,8 @@ namespace facebook_messages_analyser.Services{
                     if(person == null){
                         people.Add(new Person{
                             Name = msg.SenderName,
-                            MessagesSent = 1,
                             IsActive = participantsList.Contains(msg.SenderName)
                         });
-                    }
-                    else{
-                        person.MessagesSent ++;
                     }
 
                     messages.Add(new AnalysedMessage
@@ -46,6 +42,15 @@ namespace facebook_messages_analyser.Services{
                     });
                 }
                 fileNumber++;
+            }
+
+            //message analysis per participant
+            foreach(var p in people){
+                List<AnalysedMessage> personMessages = messages.Where(m => m.Sender == p.Name).ToList();
+                personMessages = personMessages.OrderBy(m => m.Timestamp).ToList();
+                p.MessagesSent = personMessages.Count();
+                p.FirstMessageSent = personMessages.First().Timestamp;
+                p.LastMessageSent = personMessages.Last().Timestamp;
             }
 
             //any unaccounted messages
@@ -71,28 +76,37 @@ namespace facebook_messages_analyser.Services{
             return analysis;
         }
 
-        public static void GetAnalysisResult(string chatName, int numberOfFiles){
+        public static void GetAnalysisResult(string chatName, int numberOfFiles)
+        {
             ChatAnalysis analysis = AnalyseChat(chatName, numberOfFiles);
 
-            var activePeople = analysis.People.Where(p => p.IsActive);
-            var inactivePeople = analysis.People.Where(p => !p.IsActive);
+            var activePeople = analysis.People.Where(p => p.IsActive).ToList();
+            var inactivePeople = analysis.People.Where(p => !p.IsActive).ToList();
 
+            Console.Clear();
             Console.WriteLine($"Chat \"{analysis.Title}\" has {activePeople.Count()} active members with a total of {analysis.TotalMessages} messages sent and {inactivePeople.Count()} members left!");
 
             Console.WriteLine("Participants:");
-            Console.WriteLine("\t Active:");
-            foreach(var p in activePeople){
-                Console.WriteLine($"\t\t * '{p.Name}' sent {p.MessagesSent} messages in the chat");  
-            }
-            Console.WriteLine("\t Inactive:");
-            foreach(var p in analysis.People.Where(p => !p.IsActive)){
-                Console.WriteLine($"\t\t * '{p.Name}' sent {p.MessagesSent} messages in the chat");  
-            }
+            PrintParticipantsTable(analysis.People);
 
             Console.WriteLine("Messages:");
             Console.WriteLine($"\t * First message sent by {analysis.FirstMessageSent.Sender} at {analysis.FirstMessageSent.Timestamp}");
             Console.WriteLine($"\t * Last message sent by {analysis.LastMessageSent.Sender} at {analysis.LastMessageSent.Timestamp}");
             Console.WriteLine($"\t * {analysis.UnaccountedMessages} unaccounted messages");
+        }
+
+        private static void PrintParticipantsTable(List<Person> people)
+        {
+            string format = "|{0,20}|{1,10}|{2,15}|{3,22}|{4,22}|";
+            int breakSpace = 95;
+            Console.WriteLine(new String('-',breakSpace));
+            Console.WriteLine(String.Format(format, "Person", "Status", "Messages Sent", "First Message", "Last Message"));
+            Console.WriteLine(new String('-',breakSpace));
+            foreach (var p in people)
+            {
+                Console.WriteLine(String.Format(format, p.Name, p.IsActive ? "Active" : "Inactive", p.MessagesSent, p.FirstMessageSent, p.LastMessageSent));
+            }
+            Console.WriteLine(new String('-',breakSpace));
         }
     }
 }
