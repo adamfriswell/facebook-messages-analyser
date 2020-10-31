@@ -7,90 +7,92 @@ namespace facebook_messages_analyser.Services{
     public static class Analyse{
         public static ChatAnalysis AnalyseChat(string chatName, int numberOfFiles)
         {
-            long totalMessages = 0;
-            List<Person> peopleData = new List<Person>();
-            List<AnalysedMessage> analysedMessages = new List<AnalysedMessage>();
-
-            var firstFile = FileService.GetChat(chatName,"message_1.json");
-
-            string title = StringSanitiser.RemoveUnescapedUnicode(firstFile.Title);
-            title = title.Trim();
-
-            totalMessages += firstFile.Messages.Count;
-            foreach(var msg in firstFile.Messages){
-                analysedMessages.Add(new AnalysedMessage{
-                    Sender = msg.SenderName,
-                    Timestamp = TimeConverter.MillisecondsToDateTime(msg.Timestamp),
-                    Content = msg.Content
-                });
+            //open first file to get list of active participants and title of chat
+            var firstFile = FileService.GetChat(chatName, "message_1.json");
+            List<string> participantsList = new List<string>();
+            foreach (var p in firstFile.Participants)
+            {
+                participantsList.Add(p.Name);
             }
+            string title = StringSanitiser.RemoveUnescapedUnicode(firstFile.Title).Trim();
 
-            List<Participant> participants = firstFile.Participants;
-            foreach(var p in participants){
-                peopleData.Add(new Person{
-                    Name = p.Name,
-                    MessagesSent = firstFile.Messages.Where(m => m.SenderName == p.Name).Count()
-                });
-            }
+            //go through all messages in all files
+            List<Person> people = new List<Person>();
+            List<AnalysedMessage> messages = new List<AnalysedMessage>();
 
-            var participantsNames = string.Join(", ",participants);
-            var participantCount = participants.Count;
-
-            var analysis = new ChatAnalysis(){
-                Title = title,
-                ParticipantCount = participantCount
-            };
-
-            if(numberOfFiles>1){
-                int fileNumber = 1;
-                while (fileNumber <= numberOfFiles)
+            int fileNumber = 1;
+            while (fileNumber <= numberOfFiles)
+            {
+                var chat = FileService.GetChat(chatName, $"message_{fileNumber}.json");
+                foreach (var msg in chat.Messages)
                 {
-                    var chat = FileService.GetChat(chatName,$"message_{fileNumber}.json");
-                    totalMessages += chat.Messages.Count;
-                    foreach(var p in peopleData){
-                        p.MessagesSent += chat.Messages.Where(m => m.SenderName == p.Name).Count();
-                    }
-                    foreach(var msg in chat.Messages){
-                        analysedMessages.Add(new AnalysedMessage{
-                            Sender = msg.SenderName,
-                            Timestamp = TimeConverter.MillisecondsToDateTime(msg.Timestamp),
-                            Content = msg.Content
+                    var person = people.Where(p => p.Name == msg.SenderName).SingleOrDefault();
+                    if(person == null){
+                        people.Add(new Person{
+                            Name = msg.SenderName,
+                            MessagesSent = 1,
+                            IsActive = participantsList.Contains(msg.SenderName)
                         });
                     }
-                    fileNumber++;
-                }   
+                    else{
+                        person.MessagesSent ++;
+                    }
+
+                    messages.Add(new AnalysedMessage
+                    {
+                        Sender = msg.SenderName,
+                        Timestamp = TimeConverter.MillisecondsToDateTime(msg.Timestamp),
+                        Content = msg.Content
+                    });
+                }
+                fileNumber++;
             }
 
-            analysedMessages = analysedMessages.OrderBy(m => m.Timestamp).ToList();
-
-            analysis.TotalMessages = totalMessages;
-            analysis.AllMessages = analysedMessages;
-            analysis.FirstMessageSent = analysedMessages.First();
-            analysis.LastMessageSent = analysedMessages.Last();
-            analysis.People = peopleData.OrderByDescending(p => p.MessagesSent).ToList();
-
-            long messagesByParticipants = 0;
-            foreach(var p in peopleData){
-                messagesByParticipants += p.MessagesSent;
+            //any unaccounted messages
+            long participantMessages = 0;
+            foreach(var p in people){
+                participantMessages += p.MessagesSent;
             }
-            analysis.UnaccountedMessages = totalMessages - messagesByParticipants;
+            long unaccountedMessages = messages.Count() - participantMessages;
+
+            //create analysis 
+            messages = messages.OrderBy(m => m.Timestamp).ToList();
+            var analysis = new ChatAnalysis()
+            {
+                Title = title,
+                AllMessages = messages,
+                TotalMessages = messages.Count(),
+                UnaccountedMessages = unaccountedMessages,
+                FirstMessageSent = messages.First(),
+                LastMessageSent = messages.Last(),
+                People = people.OrderByDescending(p => p.MessagesSent).ToList(),
+            };
 
             return analysis;
         }
 
         public static void GetAnalysisResult(string chatName, int numberOfFiles){
             ChatAnalysis analysis = AnalyseChat(chatName, numberOfFiles);
-            Console.WriteLine($"Chat \"{analysis.Title}\" has {analysis.ParticipantCount} members with a total of {analysis.TotalMessages} messages sent!");
+
+            var activePeople = analysis.People.Where(p => p.IsActive);
+            var inactivePeople = analysis.People.Where(p => !p.IsActive);
+
+            Console.WriteLine($"Chat \"{analysis.Title}\" has {activePeople.Count()} active members with a total of {analysis.TotalMessages} messages sent and {inactivePeople.Count()} members left!");
 
             Console.WriteLine("Participants:");
-            foreach(var p in analysis.People){
-                Console.WriteLine($"\t * '{p.Name}' sent {p.MessagesSent} messages in the chat");
+            Console.WriteLine("\t Active:");
+            foreach(var p in activePeople){
+                Console.WriteLine($"\t\t * '{p.Name}' sent {p.MessagesSent} messages in the chat");  
             }
-            Console.WriteLine($"\t * {analysis.UnaccountedMessages} unaccounted messages in the chat");
+            Console.WriteLine("\t Inactive:");
+            foreach(var p in analysis.People.Where(p => !p.IsActive)){
+                Console.WriteLine($"\t\t * '{p.Name}' sent {p.MessagesSent} messages in the chat");  
+            }
 
             Console.WriteLine("Messages:");
             Console.WriteLine($"\t * First message sent by {analysis.FirstMessageSent.Sender} at {analysis.FirstMessageSent.Timestamp}");
             Console.WriteLine($"\t * Last message sent by {analysis.LastMessageSent.Sender} at {analysis.LastMessageSent.Timestamp}");
+            Console.WriteLine($"\t * {analysis.UnaccountedMessages} unaccounted messages");
         }
     }
 }
