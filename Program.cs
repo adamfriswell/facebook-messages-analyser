@@ -11,44 +11,67 @@ namespace facebook_messages_analyser
     {
         public static void Main(string[] args)
         {
-            List<ChatInfo> chats = FileService.GetAllChatsInfo();
-            List<string> chatNames = new List<string>();
-            foreach(var c in chats){
-                chatNames.Add(c.Name);
-            }
-            string chatList = string.Join(", ", chatNames);
+            List<ChatInfo> availableChats = FileService.GetAllChatsInfo();
+            string chatList = CommaSeperatedAvailableChats(availableChats);
 
             ChatInfo selectedChat = new ChatInfo();
             bool chatNotEmptyOrNull = true;
-            while(chatNotEmptyOrNull){
-                string ans ="";
-                bool chatSelected = false;
-                while(!chatSelected){
-                    Console.WriteLine($"Please select a chat from: {chatList} (or Enter to exit)");
-                    ans = Console.ReadLine();
-                
-                    if(chatList.Contains(ans) || string.IsNullOrEmpty(ans)){
-                        chatSelected = true;
-                    }
-                }
+            while (chatNotEmptyOrNull)
+            {
+                string answer = AskUserToSelectChat(chatList);
 
-                if(!string.IsNullOrEmpty(ans)){
-                    selectedChat = chats.Where(c => c.Name == ans).SingleOrDefault();
-
-                    if(selectedChat == null){
-                        chatNotEmptyOrNull = false; 
-                    }
-                    if(selectedChat.NumberOfFiles < 1){
+                if (!string.IsNullOrEmpty(answer))
+                {
+                    selectedChat = availableChats.Where(c => c.Name == answer).SingleOrDefault();
+                    
+                    if (selectedChat.NumberOfFiles < 1)
+                    {
                         Console.WriteLine($"{selectedChat.Name} is empty.");
                     }
-                
-                    ChatAnalysis analysis = Analyse.AnalyseChat(selectedChat.Name,selectedChat.NumberOfFiles);
+                    else{
+                        ChatAnalysis analysis = Analyse.AnalyseChat(selectedChat.Name, selectedChat.NumberOfFiles);
+                        Console.WriteLine($"Chat \"{analysis.Title}\" has {analysis.ParticipantCount} members with a total of {analysis.TotalMessages} messages sent!");
+                    }
 
-                    Console.WriteLine($"Chat \"{analysis.Title}\" has {analysis.ParticipantCount} members with a total of {analysis.TotalMessages} messages sent!");
+                    Console.WriteLine($"---------------------------------------------------------------------------------");
                 }
-                
-                chatNotEmptyOrNull = false;
+                else{
+                    chatNotEmptyOrNull = false;
+                }
             }
+        }
+
+        private static string AskUserToSelectChat(string chatList)
+        {
+            string answer = "";
+            bool chatSelected = false;
+            while (!chatSelected)
+            {
+                Console.WriteLine($"Please select a chat from: {chatList} (or Enter to exit)");
+                answer = Console.ReadLine();
+
+                if (chatList.Contains(answer) || string.IsNullOrEmpty(answer))
+                {
+                    chatSelected = true;
+                }
+                else{
+                    Console.WriteLine("Invalid option, please try again.");
+                    Console.WriteLine($"---------------------------------------------------------------------------------");
+                }
+            }
+
+            return answer;
+        }
+
+        private static string CommaSeperatedAvailableChats(List<ChatInfo> chats)
+        {
+            List<string> chatNames = new List<string>();
+            foreach (var c in chats)
+            {
+                chatNames.Add(c.Name);
+            }
+            string chatList = string.Join(", ", chatNames);
+            return chatList;
         }
     }
 }
