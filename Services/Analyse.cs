@@ -86,7 +86,6 @@ namespace facebook_messages_analyser.Services{
             Console.Clear();
             Console.WriteLine($"Chat \"{analysis.Title}\" has {activePeople.Count()} active members with a total of {analysis.TotalMessages} messages sent and {inactivePeople.Count()} members left!");
 
-            Console.WriteLine("Participants:");
             PrintParticipantsTable(analysis.People);
 
             Console.WriteLine("Messages:");
